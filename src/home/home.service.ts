@@ -187,4 +187,25 @@ export class HomeService {
       where: { id },
     });
   }
+
+  async inquire(buyer: User, homeId: number, message: string) {
+    const realtor = await this.getRealorByHomeId(homeId);
+    return await this.prismaService.message.create({
+      data: {
+        message,
+        home_id: homeId,
+        realtor_id: realtor.id,
+        buyer_id: buyer.id,
+        created_at: new Date(),
+      },
+    });
+  }
+
+  async getMessages(homeId: number) {
+    const messages = await this.prismaService.message.findMany({
+      where: { home_id: homeId },
+      orderBy: { created_at: 'desc' },
+    });
+    return messages;
+  }
 }
