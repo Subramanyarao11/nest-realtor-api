@@ -9,15 +9,18 @@ import {
   Put,
   Query,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { HomeService } from './home.service';
 import { CreateHomeDto, HomeResponseDto, UpdateHomeDto } from './dtos/home.dto';
-import { PropertyType } from '@prisma/client';
+import { PropertyType, UserType } from '@prisma/client';
 import { User } from 'src/user/decorators/user.decorator';
+import { Roles } from 'src/decorators/roles.decorators';
 
 @Controller('home')
 export class HomeController {
   constructor(private readonly homeService: HomeService) {}
+
   @Get()
   getHomes(
     @Query('city') city?: string,
@@ -46,11 +49,13 @@ export class HomeController {
     return this.homeService.getHomeById(id);
   }
 
+  @Roles(UserType.REALTOR)
   @Post()
   createHome(@Body() body: CreateHomeDto, @User() user: User) {
     return this.homeService.createHome(body, user.id);
   }
 
+  @Roles(UserType.REALTOR)
   @Put(':id')
   async updateHome(
     @Param('id', ParseIntPipe) id: number,
@@ -64,6 +69,7 @@ export class HomeController {
     return this.homeService.updateHome(id, body);
   }
 
+  @Roles(UserType.REALTOR)
   @Delete(':id')
   async deleteHome(@Param('id', ParseIntPipe) id: number, @User() user: User) {
     const realtorId = await this.homeService.getRealorByHomeId(id);
