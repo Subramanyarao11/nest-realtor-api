@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { HomeResponseDto } from './dtos/home.dto';
 import { PropertyType } from '@prisma/client';
+import { User } from 'src/user/decorators/user.decorator';
 
 interface GetHomeParams {
   city?: string;
@@ -36,6 +37,28 @@ interface UpdateHomeParams {
 @Injectable()
 export class HomeService {
   constructor(private readonly prismaService: PrismaService) {}
+
+  async getRealorByHomeId(id: number) {
+    const home = await this.prismaService.home.findUnique({
+      where: { id },
+      select: {
+        realtor: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+
+    if (!home) {
+      throw new NotFoundException('Home not found');
+    }
+
+    return home.realtor;
+  }
 
   async getHomes(filters: GetHomeParams) {
     const homes = await this.prismaService.home.findMany({
@@ -97,16 +120,19 @@ export class HomeService {
     return new HomeResponseDto(fetchHome);
   }
 
-  async createHome({
-    address,
-    numberOfBedrooms,
-    numberOfBathrooms,
-    city,
-    price,
-    landSize,
-    propertyType,
-    images,
-  }: CreateHomeParams) {
+  async createHome(
+    {
+      address,
+      numberOfBedrooms,
+      numberOfBathrooms,
+      city,
+      price,
+      landSize,
+      propertyType,
+      images,
+    }: CreateHomeParams,
+    userId: number,
+  ) {
     const home = await this.prismaService.home.create({
       data: {
         address,
@@ -116,7 +142,7 @@ export class HomeService {
         price,
         land_size: landSize,
         property_type: propertyType,
-        realtor_id: 3, // hardcoded for now
+        realtor_id: userId,
         created_at: new Date(),
       },
     });
